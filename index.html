@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>M4 FCU</title>
+<style>
+:root{--bg:#101316;--card:#1a1f24;--line:#2c333a;--ink:#eef1f3;--dim:#98a2ab;--acc:#4f9dff;--accd:#16314f;
+--ok:#3fc285;--okd:#143224;--warn:#f2b33d;--warnd:#3a2c10;--bad:#ff5f5f;--badd:#3d1717;--dmr:#b394f5;--dmrd:#2a2140}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font:15px -apple-system,system-ui,sans-serif;padding:calc(8px + env(safe-area-inset-top)) 12px calc(40px + env(safe-area-inset-bottom))}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:2px 0 8px}
+header h1{font-size:18px;margin:0}
+button{font:inherit;color:var(--ink);background:#252c33;border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 10px;touch-action:manipulation}
+button:active{background:#33404c}
+button:disabled,input:disabled{opacity:.35}
+button.on{background:var(--acc);border-color:var(--acc);color:#05121f;font-weight:600}
+button.pri{background:var(--acc);border-color:var(--acc);color:#05121f;font-weight:600}
+button.save{background:var(--okd);border-color:var(--ok)}
+button.armed{background:var(--badd);border-color:var(--bad);color:#ffd6d6}
+#btnConn{min-width:118px}
+.bar{display:none;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:14px;line-height:1.35}
+.bar.show{display:block}
+.bar.y{background:var(--warnd);border:1px solid var(--warn);color:#ffe2a8}
+.bar.r{background:var(--badd);border:1px solid var(--bad);color:#ffd0d0}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+h2{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin:0 0 8px;font-weight:600}
+h3{font-size:14px;margin:14px 0 4px;font-weight:600}
+h3:first-of-type{margin-top:2px}
+.sel{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.sel div{text-align:center;padding:10px 0;border-radius:10px;border:1px solid var(--line);color:var(--dim);font-weight:700;font-size:15px;letter-spacing:.04em}
+.sel div.cur{color:#05121f;background:var(--ink);border-color:var(--ink);font-size:17px}
+.sel div.cur.safe{background:var(--ok);border-color:var(--ok)}
+.sel div.cur.semi{background:var(--acc);border-color:var(--acc)}
+.sel div.cur.auto{background:var(--warn);border-color:var(--warn)}
+.sel div.cur.fault{background:var(--bad);border-color:var(--bad)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:#14181c;border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center;min-width:0}
+.tile b{display:block;font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile span{font-size:11px;color:var(--dim)}
+.tile.wide{grid-column:span 3;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;text-align:left}
+.tile.wide b{font-size:16px}
+.big{display:flex;align-items:baseline;gap:6px;justify-content:center;margin:2px 0}
+.big b{font-size:44px;font-variant-numeric:tabular-nums;line-height:1.05}
+.big span{color:var(--dim)}
+input[type=range]{width:100%;height:36px;accent-color:var(--acc);margin:2px 0}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.row5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.note{font-size:13px;color:var(--dim);margin-top:6px;line-height:1.35}
+.rof{font-size:14px;margin-top:8px;padding:8px 10px;border-radius:8px;background:#14181c;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.rof b{color:var(--acc)}
+.unsaved{color:var(--warn);font-size:13px;min-height:18px;margin-top:8px}
+#reply{font-size:13px;color:var(--dim);margin-top:6px;min-height:18px}
+#reply b{color:var(--ink);font-weight:600}
+.dmrbox{display:none;margin-top:4px;padding-top:4px;border-top:1px solid var(--line)}
+.dmron .dmrbox{display:block}
+.wakebox{display:none}
+.wakeon .wakebox{display:block}
+.nowake .wakeall{display:none}
+#wakeOld{display:none}
+.nowake #wakeOld{display:block}
+details{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:#14181c}
+details[open]{padding-bottom:10px}
+summary{font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'▾';color:var(--dim);margin-left:8px}
+details[open] summary::after{content:'▴'}
+#wakeSum{margin-left:auto;font-weight:400;color:var(--dim);font-size:13px}
+.hold{position:relative;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.hold span{position:relative}
+.hold::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:var(--badd)}
+.hold.going::before{width:100%;transition:width 3s linear}
+.wnext{font-size:14px;margin-top:8px;padding:8px 10px;border-radius:8px;background:#14181c;border:1px solid var(--line)}
+.wnext b.y{color:var(--warn)}
+.lock .ctl{opacity:.4;pointer-events:none}
+.log .in{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.log label{display:block;font-size:12px;color:var(--dim);margin-bottom:3px}
+.log input{width:100%;height:44px;font-size:18px;text-align:center;background:#0c0e10;color:var(--ink);border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+tr.best td{background:var(--okd);color:#c8f5de;font-weight:600}
+footer{font-size:12px;color:var(--dim);text-align:center;margin-top:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<header><h1>M4 HPA FCU</h1><button id="btnConn" class="pri">Connect</button></header>
+
+<div class="bar r" id="barNoBle">This browser has no Bluetooth. On iPhone, open this page in the free <b>Bluefy</b> app (Safari can't use Bluetooth).</div>
+<div class="bar r" id="barConn"></div>
+<div class="bar y" id="barMenu"><b>Trigger menu is open on the gun.</b> It ignores changes from the phone until the menu is closed (flip off SAFE or save and exit).</div>
+<div class="bar y" id="barGame"><b>Game mode is on.</b> Settings are locked; the gun rejects changes from the phone. Tap <b>Tuning mode</b> below to unlock.</div>
+
+<section id="live">
+  <h2>Selector</h2>
+  <div class="sel"><div id="sSAFE">SAFE</div><div id="sSEMI">SEMI</div><div id="sAUTO">AUTO</div><div id="sFAULT">FAULT</div></div>
+  <div class="tiles">
+    <div class="tile"><b id="vStat">--</b><span>status</span></div>
+    <div class="tile"><b id="vRps">--</b><span>live rps</span></div>
+    <div class="tile"><b id="vPeak">--</b><span>peak rps, last string</span></div>
+    <div class="tile"><b id="vStr">--</b><span>shots, last string</span></div>
+    <div class="tile"><b id="vSes">--</b><span>session shots</span></div>
+    <div class="tile"><b id="vTot">--</b><span>lifetime shots</span></div>
+    <div class="tile"><b id="vSet">--</b><span>set rate (rps)</span></div>
+    <div class="tile"><b id="vMode">--</b><span>fire mode</span></div>
+    <div class="tile"><b id="vBatt">--</b><span>pack</span></div>
+    <div class="tile wide"><span>Last reset</span><b id="vRst">--</b></div>
+  </div>
+</section>
+
+<section id="setc">
+  <h2>Settings · change live on the gun</h2>
+  <div class="ctl">
+    <h3>Dwell (coil on time)</h3>
+    <div class="big"><b id="bDwell">--</b><span>ms</span></div>
+    <input type="range" id="rDwell" min="1" max="50" step="1">
+    <div class="row"><button data-k="dwell" data-s="-10">−10</button><button data-k="dwell" data-s="-1">−1</button><button data-k="dwell" data-s="1">+1</button><button data-k="dwell" data-s="10">+10</button></div>
+
+    <h3>Off time (between shots)</h3>
+    <div class="big"><b id="bOff">--</b><span>ms</span></div>
+    <input type="range" id="rOff" min="1" max="250" step="1">
+    <div class="row"><button data-k="off" data-s="-10">−10</button><button data-k="off" data-s="-1">−1</button><button data-k="off" data-s="1">+1</button><button data-k="off" data-s="10">+10</button></div>
+    <div class="rof" id="rofLine">Rate of fire = 1000 / (dwell + off) = -- rps</div>
+
+    <h3>Auto mode (what AUTO does)</h3>
+    <div class="row3" id="amodes"><button data-a="1">Full</button><button data-a="2">Burst</button><button data-a="3">Binary</button></div>
+
+    <h3>Burst count</h3>
+    <div class="row" id="bursts"><button data-b="2">2</button><button data-b="3">3</button><button data-b="4">4</button><button data-b="5">5</button></div>
+
+    <h3>DMR mode (SEMI and AUTO fire semi only)</h3>
+    <div class="row2" id="dmrs" style="margin-top:0"><button data-m="0">Off</button><button data-m="1">On</button></div>
+
+    <div class="dmrbox">
+      <h3>DMR dwell</h3>
+      <div class="big"><b id="bDmrDwell">--</b><span>ms</span></div>
+      <input type="range" id="rDmrDwell" min="1" max="50" step="1">
+      <div class="row"><button data-k="dmrDwell" data-s="-10">−10</button><button data-k="dmrDwell" data-s="-1">−1</button><button data-k="dmrDwell" data-s="1">+1</button><button data-k="dmrDwell" data-s="10">+10</button></div>
+      <h3>DMR shot delay</h3>
+      <div class="row5" id="delays"><button data-d="0">None</button><button data-d="500">0.5 s</button><button data-d="1000">1 s</button><button data-d="1500">1.5 s</button><button data-d="2000">2 s</button></div>
+      <div class="note" id="delayNote">A pull before the delay is over is ignored.</div>
+    </div>
+
+    <details id="wakeDrop">
+      <summary>Wake-up shots <span id="wakeSum">--</span></summary>
+      <div class="note" id="wakeOld">Needs firmware v13 or newer on the gun.</div>
+      <div class="wakeall">
+        <div class="note" style="margin-top:0">At power-up, and after the gun sits longer than the idle time, the first shots use a longer dwell to break the O-rings free. Then normal dwell resumes.</div>
+        <div class="row2" id="wakes"><button data-w="0">Off</button><button data-w="1">On</button></div>
+        <div class="wakebox">
+          <h3>Wake-up dwell</h3>
+          <div class="big"><b id="bWakeDwell">--</b><span>ms</span></div>
+          <input type="range" id="rWakeDwell" min="1" max="50" step="1">
+          <div class="row"><button data-k="wakeDwell" data-s="-10">−10</button><button data-k="wakeDwell" data-s="-1">−1</button><button data-k="wakeDwell" data-s="1">+1</button><button data-k="wakeDwell" data-s="10">+10</button></div>
+          <h3>Wake-up shots (how many get the long dwell)</h3>
+          <div class="row5" id="wshots"><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button></div>
+          <h3>Idle time before wake-up shots</h3>
+          <div class="big"><b id="bWakeIdle">--</b><span>s</span></div>
+          <input type="range" id="rWakeIdle" min="5" max="600" step="5">
+          <div class="row"><button data-k="wakeIdle" data-s="-30">−30</button><button data-k="wakeIdle" data-s="-5">−5</button><button data-k="wakeIdle" data-s="5">+5</button><button data-k="wakeIdle" data-s="30">+30</button></div>
+          <div class="wnext" id="wakeNext">Next shot: --</div>
+          <div class="note">If the wake-up dwell is shorter than your normal dwell, the normal dwell is used. Tap Save to flash to keep changes.</div>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div class="unsaved" id="vUns"></div>
+  <div class="row2"><button id="btnSave" class="save">Save to flash</button><button id="btnDef">Restore defaults</button></div>
+  <div id="reply">Gun says: <b id="vReply">--</b></div>
+</section>
+
+<section>
+  <h2>Gun</h2>
+  <div class="row2" style="margin-top:0"><button id="btnTune">Tuning mode</button><button id="btnGame">Game mode (locked)</button></div>
+  <div class="row2"><button id="btnZero">Zero session</button><button id="btnDisc">Disconnect</button></div>
+  <button id="btnLife" class="hold" style="width:100%;margin-top:8px"><span>Reset lifetime shots (hold 3 s)</span></button>
+  <div class="note" id="lifeNote">Sets lifetime and session shots to 0. Needs firmware v13 and tuning mode.</div>
+</section>
+
+<section class="log">
+  <h2>Chrono log</h2>
+  <div class="in">
+    <div><label>Dwell ms</label><input id="lDwell" inputmode="numeric"></div>
+    <div><label>FPS</label><input id="lFps" inputmode="decimal"></div>
+    <div><label>BB g</label><input id="lBb" inputmode="decimal"></div>
+  </div>
+  <div class="row2"><button id="btnAdd" class="pri">Add shot</button><button id="btnClr">Clear log</button></div>
+  <table><thead><tr><th>Dwell</th><th>n</th><th>Avg FPS</th><th>±SD</th><th>J</th></tr></thead><tbody id="tLog"></tbody></table>
+  <div class="note">Green = lowest dwell within 1% of the fastest average: full speed for the least air. Kept on this phone only. Dwell fills in from the gun (DMR dwell when DMR is on).</div>
+</section>
+
+<footer>M4 FCU page v13.1 · firmware <span id="vFw">--</span> · <span id="vOffline">Offline copy: checking…</span></footer>
+
+<script>
+// ---- Bluetooth protocol: same as M4 HPA FCU v13 firmware (still works with v12, minus wake-up shot) ----
+// status: v12 = 34 bytes; v13 = 40, adds [34] wake on, [35] wake dwell ms, [36..37] wake idle s, [38] bit0 next shot is a wake-up shot, bit1 last shot was one, [39] wake shots
+// settings write: v12 = 8 bytes; v13 = 13 bytes, adds [8] wake on, [9] wake dwell, [10..11] wake idle s, [12] wake shots
+const SVC='4d340001-8e4f-4b8a-9d3e-6a1b2c3d4e5f', U=n=>`4d34000${n}-8e4f-4b8a-9d3e-6a1b2c3d4e5f`;
+const C={SAVE:1,DEF:2,GAME:3,TUNE:4,ZERO:5,LIFE:6};
+const LIM={dwell:[1,50],off:[1,250],amode:[1,3],burst:[2,5],dmr:[0,1],dmrDwell:[1,50],dmrDelay:[0,3000],wake:[0,1],wakeDwell:[1,50],wakeIdle:[5,600],wakeShots:[1,5]};
+const RST={1:'power-on',2:'reset pin',3:'software restart',4:'CRASH',5:'WATCHDOG',6:'WATCHDOG',7:'WATCHDOG',8:'sleep',9:'BROWNOUT',11:'USB'};
+const $=id=>document.getElementById(id);
+let lastAutoDwell='',dev=null,ch={},st=null,want=null,wantConn=false,retry=0,rTimer=null,lastData=0,lastEdit=0,sendTimer=null,sending=false,sendAgain=false;
+
+function parse(dv){
+  if(!dv||dv.byteLength<34)return null;
+  const u8=i=>dv.getUint8(i),u16=i=>dv.getUint16(i,true),u32=i=>dv.getUint32(i,true),f=u8(2),g=u8(3);
+  const p={sel:u8(1),armed:!!(f&1),rel:!!(f&2),cool:!!(f&4),trig:!!(f&8),menu:!!(f&16),firing:!!(f&32),bw:!!(f&64),bwarn:!!(f&128),
+    bcut:!!(g&1),game:!!(g&2),unsaved:!!(g&4),ses:u32(4),tot:u32(8),rps:u16(12)/10,peak:u16(14)/10,str:u16(16),mv:u16(18),
+    s:{dwell:u8(20),off:u8(21),amode:u8(22),burst:u8(23),dmr:u8(24),dmrDwell:u8(25),dmrDelay:u16(26)},up:u32(28),rst:u8(32),fw:u8(33),
+    hasWake:false,wakeNext:false,wakeLast:false};
+  if(dv.byteLength>=40){
+    Object.assign(p.s,{wake:u8(34),wakeDwell:u8(35),wakeIdle:u16(36),wakeShots:u8(39)});
+    p.hasWake=true;p.wakeNext=!!(u8(38)&1);p.wakeLast=!!(u8(38)&2);
+  }
+  return p;
+}
+const bar=(id,on,txt)=>{const b=$(id);if(txt!==undefined)b.innerHTML=txt;b.classList.toggle('show',!!on)};
+const rate=s=>1000/((s.dmr?s.dmrDwell:s.dwell)+s.off);
+const editingNow=()=>Date.now()-lastEdit<1200;
+
+// what the controls show: the gun's values, unless the user is mid-change
+function shown(){return (want&&(editingNow()||sending||sendTimer))?want:(st?st.s:null)}
+
+function renderSettings(){
+  const s=shown(); if(!s)return;
+  const hw=!!(st&&st.hasWake);
+  $('setc').classList.toggle('nowake',!hw);
+  for(const [k,b,r] of [['dwell','bDwell','rDwell'],['off','bOff','rOff'],['dmrDwell','bDmrDwell','rDmrDwell'],['wakeDwell','bWakeDwell','rWakeDwell'],['wakeIdle','bWakeIdle','rWakeIdle']]){
+    if(s[k]===undefined)continue;
+    $(b).textContent=s[k]; if(document.activeElement!==$(r)||!editingNow())$(r).value=s[k];
+  }
+  const dw=s.dwell;
+  $('rofLine').innerHTML=`Rate of fire = 1000 / (${dw} + ${s.off}) = <b>${(1000/(dw+s.off)).toFixed(1)} rps</b>`+(s.dmr?` <span style="color:var(--dmr)">(DMR uses ${s.dmrDwell} ms dwell, semi only)</span>`:'');
+  document.querySelectorAll('#amodes button').forEach(b=>b.classList.toggle('on',+b.dataset.a===s.amode));
+  document.querySelectorAll('#bursts button').forEach(b=>b.classList.toggle('on',+b.dataset.b===s.burst));
+  document.querySelectorAll('#dmrs button').forEach(b=>b.classList.toggle('on',+b.dataset.m===s.dmr));
+  let preset=false;document.querySelectorAll('#delays button').forEach(b=>{const on=+b.dataset.d===s.dmrDelay;preset=preset||on;b.classList.toggle('on',on)});
+  $('delayNote').textContent=(preset?'':`Set to ${s.dmrDelay} ms (from serial). `)+'A pull before the delay is over is ignored.';
+  $('setc').classList.toggle('dmron',!!s.dmr);
+  if(hw){
+    document.querySelectorAll('#wakes button').forEach(b=>b.classList.toggle('on',+b.dataset.w===s.wake));
+    try{$('wakeDrop').open=localStorage.getItem('m4fcu-wakeopen')==='1'}catch(e){}
+$('wakeDrop').addEventListener('toggle',()=>{try{localStorage.setItem('m4fcu-wakeopen',$('wakeDrop').open?'1':'0')}catch(e){}});
+document.querySelectorAll('#wshots button').forEach(b=>b.classList.toggle('on',+b.dataset.n===s.wakeShots));
+    $('setc').classList.toggle('wakeon',!!s.wake);
+    const nd=s.dmr?s.dmrDwell:s.dwell,wd=Math.max(nd,s.wakeDwell);
+    $('wakeSum').textContent=s.wake?`On · ${s.wakeShots} × ${s.wakeDwell} ms after ${s.wakeIdle} s`:'Off';
+    $('wakeNext').innerHTML=st.wakeNext?`Next shot: <b class="y">wake-up shot, ${wd} ms</b>`:`Next shot: normal, ${nd} ms`+(st.wakeLast?' (last shot was a wake-up shot)':'');
+  }else $('wakeSum').textContent='needs firmware v13';
+}
+
+function render(){
+  if(!st)return;
+  const sel=['SAFE','SEMI','AUTO','FAULT'][st.sel]||'FAULT';
+  ['SAFE','SEMI','AUTO','FAULT'].forEach(n=>{$('s'+n).className=(n===sel?'cur '+n.toLowerCase():'')});
+  let stat='Ready';
+  if(st.sel===3)stat='SEL FAULT';else if(st.trig)stat='TRIG FAULT';else if(st.bcut)stat='BATT CUT';else if(st.firing)stat='Firing';
+  else if(st.cool)stat='Cool-down';else if(st.rel)stat='Release';else if(st.menu)stat='Menu';else if(!st.armed)stat='Not armed';
+  $('vStat').textContent=stat;
+  $('vRps').textContent=st.rps?st.rps.toFixed(1):'0';
+  $('vPeak').textContent=st.peak?st.peak.toFixed(1):'--';
+  $('vStr').textContent=st.str;$('vSes').textContent=st.ses;$('vTot').textContent=st.tot;
+  $('vSet').textContent=rate(st.s).toFixed(1);
+  $('vMode').textContent=st.sel===0?'SAFE':st.sel===3?'FAULT':st.s.dmr?'DMR':st.sel===1?'SEMI':['','FULL','BURST '+st.s.burst,'BINARY'][st.s.amode];
+  $('vBatt').textContent=st.bw&&st.mv>3000?(st.mv/1000).toFixed(2)+' V':'n/a';
+  const rs=RST[st.rst]||('code '+st.rst);$('vRst').textContent=rs;$('vRst').style.color=(st.rst===9||st.rst===4||(st.rst>=5&&st.rst<=7))?'var(--bad)':'';
+  $('vFw').textContent='v'+st.fw;
+  bar('barMenu',st.menu);bar('barGame',st.game);
+  $('setc').classList.toggle('lock',st.game||st.menu);
+  $('btnSave').disabled=$('btnDef').disabled=st.game||st.menu;
+  $('btnLife').disabled=st.game||!st.hasWake;
+  $('btnTune').classList.toggle('on',!st.game);$('btnGame').classList.toggle('on',st.game);
+  $('vUns').textContent=st.game?'':(st.unsaved?'Changed on the gun but not saved: tap Save to flash to keep it after power-off.':'');
+  const gd=String(st.s.dmr?st.s.dmrDwell:st.s.dwell),ld=$('lDwell');   // fill from the gun unless you typed your own
+  if(document.activeElement!==ld&&(ld.value===''||ld.value===lastAutoDwell)){ld.value=gd;lastAutoDwell=gd}
+  renderSettings();
+}
+
+function onStatus(dv){const p=parse(dv);if(!p)return false;st=p;lastData=Date.now();render();return true}
+
+// ---- sending settings: latest value wins, one write at a time ----
+function change(k,v){
+  if(!st){toast('Not connected');return}
+  if(st.game||st.menu)return;
+  const [lo,hi]=LIM[k];v=Math.max(lo,Math.min(hi,Math.round(+v)));
+  want=Object.assign({},(want&&editingNow())?want:st.s,{[k]:v});
+  lastEdit=Date.now();renderSettings();
+}
+function changeNow(k,v){change(k,v);flush()}
+function changeSoon(k,v){change(k,v);if(!sendTimer)sendTimer=setTimeout(flush,150)}   // while dragging: a send every 150 ms, latest value
+async function flush(){
+  clearTimeout(sendTimer);sendTimer=null;
+  if(!want||!ch.set)return;
+  if(sending){sendAgain=true;return}
+  sending=true;
+  const s=want,a=[s.dwell,s.off,s.amode,s.burst,s.dmr,s.dmrDwell,s.dmrDelay&255,s.dmrDelay>>8];
+  if(st&&st.hasWake)a.push(s.wake,s.wakeDwell,s.wakeIdle&255,s.wakeIdle>>8,s.wakeShots);   // v12 firmware only takes 8 bytes
+  const b=new Uint8Array(a);
+  try{await gatt(()=>ch.set.writeValueWithResponse?ch.set.writeValueWithResponse(b):ch.set.writeValue(b))}
+  catch(e){bar('barConn',true,'Change not sent: '+e.message)}
+  sending=false;
+  if(sendAgain){sendAgain=false;flush()}else setTimeout(readNow,120);
+}
+let gq=Promise.resolve();
+function gatt(fn){const p=gq.then(fn);gq=p.catch(()=>{});return p}
+
+async function ctl(c){
+  if(!ch.ctl){toast('Not connected');return}
+  try{await gatt(()=>ch.ctl.writeValue(new Uint8Array([c])))}catch(e){bar('barConn',true,'Command not sent: '+e.message)}
+  setTimeout(readNow,150);
+}
+async function readNow(){
+  if(!ch.stat)return;
+  try{onStatus(await gatt(()=>ch.stat.readValue()))}catch(e){}
+}
+function toast(t){$('vReply').textContent=t}
+
+// ---- connect / reconnect ----
+async function attach(){
+  const srv=await dev.gatt.connect(),svc=await srv.getPrimaryService(SVC);
+  ch.stat=await svc.getCharacteristic(U(2));ch.set=await svc.getCharacteristic(U(3));
+  ch.ctl=await svc.getCharacteristic(U(4));ch.rep=await svc.getCharacteristic(U(5));
+  onStatus(await ch.stat.readValue());                       // first encrypted read: iOS asks for the PIN once
+  ch.stat.addEventListener('characteristicvaluechanged',e=>onStatus(e.target.value));
+  await ch.stat.startNotifications();
+  ch.rep.addEventListener('characteristicvaluechanged',e=>{$('vReply').textContent=new TextDecoder().decode(e.target.value)});
+  await ch.rep.startNotifications();
+  try{$('vReply').textContent=new TextDecoder().decode(await ch.rep.readValue())}catch(e){}
+  retry=0;bar('barConn',false);$('btnConn').textContent='Connected';$('btnConn').classList.remove('pri');
+}
+async function connect(){
+  if(!navigator.bluetooth){bar('barNoBle',true);return}
+  try{
+    dev=await navigator.bluetooth.requestDevice({filters:[{name:'M4-FCU'}],optionalServices:[SVC]});
+    dev.addEventListener('gattserverdisconnected',onDisc);wantConn=true;
+    bar('barConn',true,'Connecting to M4-FCU…');await attach();
+  }catch(e){if(e.name!=='NotFoundError')bar('barConn',true,'Could not connect: '+e.message+'. Is the gun powered and close to the phone?');else bar('barConn',false)}
+}
+function onDisc(){
+  ch={};$('btnConn').textContent='Connect';$('btnConn').classList.add('pri');
+  if(!wantConn){bar('barConn',true,'Disconnected.');return}
+  bar('barConn',true,'Disconnected — reconnecting…');clearTimeout(rTimer);rTimer=setTimeout(reconnect,1000);
+}
+async function reconnect(){
+  if(!wantConn||!dev)return;retry++;
+  try{await attach()}catch(e){bar('barConn',true,`Disconnected — retrying (${retry})… keep the gun powered and close.`);rTimer=setTimeout(reconnect,Math.min(1000*(1+retry),8000))}
+}
+function disconnect(){wantConn=false;clearTimeout(rTimer);if(dev&&dev.gatt.connected)dev.gatt.disconnect();ch={};bar('barConn',true,'Disconnected.')}
+
+// notifications stopped? read directly every second
+setInterval(()=>{if(ch.stat&&Date.now()-lastData>1000&&!sending)readNow()},500);
+setInterval(()=>{if(ch.stat&&lastData&&Date.now()-lastData>5000)bar('barConn',true,'No data from the gun for a few seconds — still trying…');else if(ch.stat&&$('barConn').textContent.startsWith('No data'))bar('barConn',false)},1000);
+
+// ---- controls ----
+$('btnConn').onclick=()=>{if(!ch.stat)connect()};
+$('btnDisc').onclick=disconnect;
+for(const [k,r] of [['dwell','rDwell'],['off','rOff'],['dmrDwell','rDmrDwell'],['wakeDwell','rWakeDwell'],['wakeIdle','rWakeIdle']]){
+  $(r).addEventListener('input',e=>changeSoon(k,e.target.value));   // sends while dragging, 150 ms debounce
+  $(r).addEventListener('change',e=>changeNow(k,e.target.value));
+}
+document.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k,s=shown();if(s)changeNow(k,s[k]+(+b.dataset.s))});
+document.querySelectorAll('#amodes button').forEach(b=>b.onclick=()=>changeNow('amode',b.dataset.a));
+document.querySelectorAll('#bursts button').forEach(b=>b.onclick=()=>changeNow('burst',b.dataset.b));
+document.querySelectorAll('#dmrs button').forEach(b=>b.onclick=()=>changeNow('dmr',b.dataset.m));
+document.querySelectorAll('#delays button').forEach(b=>b.onclick=()=>changeNow('dmrDelay',b.dataset.d));
+document.querySelectorAll('#wakes button').forEach(b=>b.onclick=()=>changeNow('wake',b.dataset.w));
+document.querySelectorAll('#wshots button').forEach(b=>b.onclick=()=>changeNow('wakeShots',b.dataset.n));
+$('btnSave').onclick=()=>ctl(C.SAVE);
+$('btnZero').onclick=()=>ctl(C.ZERO);
+// lifetime reset: press and hold 3 s (let go early = cancel)
+let lifeT=null;
+function lifeCancel(){if(lifeT){clearTimeout(lifeT);lifeT=null}$('btnLife').classList.remove('going');$('btnLife').firstChild.textContent='Reset lifetime shots (hold 3 s)'}
+$('btnLife').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  if(!st){toast('Not connected');return}
+  if(!st.hasWake){toast('Lifetime reset needs firmware v13');return}
+  if(st.game){toast('Locked: game mode. Tap Tuning mode first');return}
+  $('btnLife').classList.add('going');$('btnLife').firstChild.textContent='Keep holding…';
+  lifeT=setTimeout(()=>{lifeT=null;lifeCancel();ctl(C.LIFE)},3000);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>$('btnLife').addEventListener(ev,lifeCancel));
+$('btnLife').addEventListener('contextmenu',e=>e.preventDefault());
+$('btnGame').onclick=()=>ctl(C.GAME);
+$('btnTune').onclick=()=>ctl(C.TUNE);
+let defArm=0;
+$('btnDef').onclick=()=>{
+  if(Date.now()-defArm<3000){defArm=0;$('btnDef').textContent='Restore defaults';$('btnDef').classList.remove('armed');want=null;ctl(C.DEF)}
+  else{defArm=Date.now();$('btnDef').textContent='Tap again';$('btnDef').classList.add('armed');
+    setTimeout(()=>{if(Date.now()-defArm>=2900){$('btnDef').textContent='Restore defaults';$('btnDef').classList.remove('armed')}},3000)}
+};
+
+// ---- chrono log (kept on this phone only) ----
+const LKEY='m4fcu-chrono',BKEY='m4fcu-bb';
+const loadLog=()=>{try{return JSON.parse(localStorage.getItem(LKEY))||[]}catch(e){return[]}};
+const saveLog=l=>{try{localStorage.setItem(LKEY,JSON.stringify(l))}catch(e){}};
+let log=loadLog();
+try{$('lBb').value=localStorage.getItem(BKEY)||'0.20'}catch(e){$('lBb').value='0.20'}
+function renderLog(){
+  const g={};log.forEach(r=>{(g[r.d]=g[r.d]||[]).push(r)});
+  const rows=Object.keys(g).map(Number).sort((a,b)=>a-b).map(d=>{
+    const f=g[d].map(r=>r.f),n=f.length,avg=f.reduce((a,b)=>a+b,0)/n,
+      sd=n>1?Math.sqrt(f.reduce((a,b)=>a+(b-avg)**2,0)/(n-1)):0,
+      bb=g[d][g[d].length-1].b,j=0.5*(bb/1000)*(avg*0.3048)**2;
+    return{d,n,avg,sd,j,bb};
+  });
+  const top=Math.max(0,...rows.map(r=>r.avg)),best=rows.find(r=>r.avg>=top*0.99);
+  $('tLog').innerHTML=rows.map(r=>`<tr class="${r===best?'best':''}"><td>${r.d} ms</td><td>${r.n}</td><td>${r.avg.toFixed(1)}</td><td>${r.sd.toFixed(1)}</td><td>${r.j.toFixed(2)}</td></tr>`).join('')
+    ||'<tr><td colspan="5" style="text-align:center;color:var(--dim)">No shots logged</td></tr>';
+}
+$('btnAdd').onclick=()=>{
+  const d=parseInt($('lDwell').value),f=parseFloat($('lFps').value),b=parseFloat($('lBb').value);
+  if(!(d>0&&f>0&&b>0)){toast('Chrono log: fill in dwell, FPS and BB weight');return}
+  log.push({d,f,b,t:Date.now()});saveLog(log);try{localStorage.setItem(BKEY,String(b))}catch(e){}
+  renderLog();$('lFps').value='';$('lFps').focus();
+};
+let clrArm=0;
+$('btnClr').onclick=()=>{
+  if(Date.now()-clrArm<3000){clrArm=0;log=[];saveLog(log);renderLog();$('btnClr').textContent='Clear log';$('btnClr').classList.remove('armed')}
+  else{clrArm=Date.now();$('btnClr').textContent='Tap again';$('btnClr').classList.add('armed');
+    setTimeout(()=>{if(Date.now()-clrArm>=2900){$('btnClr').textContent='Clear log';$('btnClr').classList.remove('armed')}},3000)}
+};
+renderLog();
+
+if(!navigator.bluetooth)bar('barNoBle',true);
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(()=>navigator.serviceWorker.ready)
+    .then(()=>$('vOffline').textContent='Offline copy: saved on this phone')
+    .catch(()=>$('vOffline').textContent='Offline copy not available in this browser - leave the tab open');
+}else $('vOffline').textContent='Offline copy not available in this browser - leave the tab open';
+</script>
+</body>
+</html>
